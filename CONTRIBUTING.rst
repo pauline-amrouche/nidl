@@ -77,7 +77,7 @@ These issues should include the **enhancement** label.
 Pull Requests
 -------------
 
-If you would like to take a more active roll in the development of nidl you can do so by submitting a "Pull request".
+If you would like to take a more active role in the development of nidl you can do so by submitting a "Pull request".
 A Pull Requests (PR) is a way by which a user can submit modifications or additions to the nidl package directly.
 PRs need to be reviewed by the package moderators and if accepted are merged into the master branch of the repository.
 
