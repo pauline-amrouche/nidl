@@ -8,7 +8,6 @@
 
 import unittest
 
-from matplotlib.font_manager import weight_dict
 import numpy as np
 import torch
 from torch.distributions import Normal, Laplace, Bernoulli
