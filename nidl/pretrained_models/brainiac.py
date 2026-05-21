@@ -57,7 +57,6 @@ class BrainIAC(nn.Module):
         state_dict = ckpt['state_dict']
 
         # Map original keys (MONAI) to nidl keys (timm)
-        # Remap keys
         mapped_state_dict = {}
         
         for key, value in state_dict.items():
@@ -74,7 +73,6 @@ class BrainIAC(nn.Module):
 
             mapped_state_dict[new_key] = value
 
-        print('Loading checkpoint for BrainIAC pretrained model.')
         missing, unexpected = self.backbone.load_state_dict(
                     mapped_state_dict, strict=True)
         if unexpected:
