@@ -7,3 +7,4 @@
 ##########################################################################
 
 from .brainiac import BrainIAC
+from .neuro_simclr_3d import NeuroSimCLR3D
