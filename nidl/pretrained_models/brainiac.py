@@ -52,8 +52,9 @@ class BrainIAC(nn.Module):
             num_classes=0,
         )
 
-        # Load state dict
-        state_dict = torch.load(checkpoint_path)['state_dict']
+        # Load checkpoint and weights
+        ckpt = torch.load(checkpoint_path, map_location=torch.device('cpu'))
+        state_dict = ckpt['state_dict']
 
         # Map original keys (MONAI) to nidl keys (timm)
         # Remap keys
