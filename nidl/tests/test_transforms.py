@@ -612,10 +612,11 @@ class TestRandomGaussianNoise(unittest.TestCase):
         torch_input = torch.rand(3, 4, 5)
         output = transform(self.numpy_input)
         self.assertGreater(np.std(output), np.std(np_input))
-        self.assertLess(np.std(output), np.sqrt(10**2 + np.var(np_input)))
+        # sample std of a small volume fluctuates around sqrt(10**2 + var)
+        self.assertLess(np.std(output), 1.5 * np.sqrt(10**2 + np.var(np_input)))
         output = transform(torch_input)
         self.assertGreater(torch.std(output), torch.std(torch_input))
-        self.assertLess(torch.std(output), torch.sqrt(10**2 + torch.var(torch_input)))
+        self.assertLess(torch.std(output), 1.5 * torch.sqrt(10**2 + torch.var(torch_input)))
 
     def test_invalid_std_range_raises(self):
         with self.assertRaises(ValueError):
