@@ -33,7 +33,7 @@ class DCL(TransformerMixin, BaseEstimator):
     for self-supervised representation learning. It builds upon SimCLR [2]_
     but removes the positive-negative coupling in InfoNCE loss that biases
     training in small batch sizes.
-    See :py:class:`~nidl.estimators.ssl.simclr.SimCLR`. for an introduction on
+    See :py:class:`~nidl.estimators.ssl.simclr.SimCLR` for an introduction on
     contrastive learning.
 
     Parameters
@@ -54,7 +54,7 @@ class DCL(TransformerMixin, BaseEstimator):
     proj_output_dim : int, default=128
         Projector output dimension.
     temperature : float, default=0.1
-        The DCL loss temperature parameter.
+        Temperature of the DCL loss (see :class:`~nidl.losses.DCLLoss`).
     optimizer : {'sgd', 'adam', 'adamW'} or torch.optim.Optimizer or type, \
         default="adamW"
         Optimizer for training the model. If a string is given, it can be:
@@ -69,8 +69,8 @@ class DCL(TransformerMixin, BaseEstimator):
     weight_decay : float, default=5e-4
         Weight decay in the optimizer.
     exclude_bias_and_norm_wd : bool, default=True
-        Whether the bias terms and normalization layers get weight decay during
-        optimization or not.
+        If True, bias terms and normalization layers are excluded from weight
+        decay during optimization.
     optimizer_kwargs : dict or None, default=None
         Extra named arguments for the optimizer.
     lr_scheduler : {"none", "warmup_cosine"}, LRSchedulerPLType or None,\
@@ -84,7 +84,7 @@ class DCL(TransformerMixin, BaseEstimator):
         Additional keyword arguments for the BaseEstimator class, such as
         `max_epochs`, `max_steps`, `num_sanity_val_steps`,
         `check_val_every_n_epoch`, `callbacks`, etc.
-    
+
     Attributes
     ----------
     encoder : torch.nn.Module
@@ -167,7 +167,16 @@ class DCL(TransformerMixin, BaseEstimator):
         self.loss = DCLLoss(self.temperature)
 
     def _shared_step(self, batch: Sequence[Any], is_train: bool = True):
-        """Shared code for training and validation steps."""
+        """Shared code for training and validation steps.
+
+        Encodes and projects both views, gathers them across devices and
+        computes the DCL loss.
+
+        Returns
+        -------
+        outputs : dict
+            Dictionary with keys "loss", "z1", "z2" and "y" (detached).
+        """
         X, y = self.parse_batch(batch, device=self.device)
         z1 = self.projection_head(self.encoder(X[0]))
         z2 = self.projection_head(self.encoder(X[1]))
@@ -249,7 +258,7 @@ class DCL(TransformerMixin, BaseEstimator):
         return outputs
 
     def test_step(self, batch, batch_idx):
-        """Skip the test step."""
+        """Skip the test step (no test loss is defined for DCL)."""
         return
 
     def transform_step(
@@ -282,7 +291,17 @@ class DCL(TransformerMixin, BaseEstimator):
         return self.encoder(batch)
 
     def configure_optimizers(self):
-        """Initialize the optimizer and learning rate scheduler in DCL."""
+        """Configure the optimizer and learning rate scheduler.
+
+        The encoder ("backbone") and projection head ("head") parameters are
+        optimized jointly.
+
+        Returns
+        -------
+        dict or Optimizer
+            Optimizer (and scheduler, if any) in the format expected by
+            PyTorch Lightning.
+        """
         params = [
             {"name": "backbone", "params": self.encoder.parameters()},
             {"name": "head", "params": self.projection_head.parameters()},
@@ -300,6 +319,7 @@ class DCL(TransformerMixin, BaseEstimator):
         )
 
     def _fill_default_lr_scheduler_kwargs(self):
+        """Set default warmup/cosine scheduler options if not provided."""
         if self.lr_scheduler_kwargs is None:
             self.lr_scheduler_kwargs = {}
 

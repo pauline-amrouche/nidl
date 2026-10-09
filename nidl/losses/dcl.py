@@ -16,31 +16,31 @@ from torch import Tensor, nn
 
 
 class DCLLoss(nn.Module):
-    r"""Implementation of the Decoupled Contrastive Learning loss [1]_
+    r"""Implementation of the Decoupled Contrastive Learning loss [1]_.
 
     This loss function implements the decoupled contrastive learning loss as
     described in [1]_. It builds upon the classic InfoNCE loss but removes the
     positive-negative coupling that biases training in small batch sizes.
 
     Given a mini-batch of size :math:`N`, we obtain two embeddings
-    :math:`z_{i}^(1)` and :math:`z_{i}^(2)` representing two different
+    :math:`z_{i}^{(1)}` and :math:`z_{i}^{(2)}` representing two different
     augmented views of the same sample. The **DCL** loss is defined as:
 
     .. math::
         \mathcal{L}_i^{(k)}
         = - \big(\operatorname{sim}(z_i^{(1)}, z_i^{(2)})/\tau\big)
         + \log
-        \sum\limits_{l \in \{1,2\}, j \in \![1,N\!]}
-        \mathbf{1}_{[j \ne i]},
+        \sum\limits_{l \in \{1,2\}, j \in [1,N]}
+        \mathbf{1}_{[j \ne i]}
         \exp\!\big(\operatorname{sim}(z_i^{(k)}, z_j^{(l)})/\tau\big)
 
-    where :math:`\operatorname{sim}(z_i^(k), z_j^(l))` denotes the cosine
+    where :math:`\operatorname{sim}(z_i^{(k)}, z_j^{(l)})` denotes the cosine
     similarity between the normalized embeddings :math:`z_i^(k)` and
     :math:`z_j^(l)`, and :math:`\tau > 0` is a temperature parameter
     controlling the concentration of the distribution.
     :math:`\mathbf{1}_{[j \ne i]}` ensures decoupling.
 
-    Additionnaly, a weighting function :math:`w` can be added to modulate the
+    Additionally, a weighting function :math:`w` can be added to modulate the
     contribution of the positive pairs' similarity to the loss. The intuition
     is that when the embedding of the positive sample :math:`z_i^{(2)}` is
     close to the anchor :math:`z_i^{(1)}`, there is less learning signal than
@@ -51,8 +51,8 @@ class DCLLoss(nn.Module):
         = - w(z_i^{(1)}, z_i^{(2)})
         \big(\operatorname{sim}(z_i^{(1)}, z_i^{(2)})/\tau\big)
         + \log
-        \sum\limits_{l \in \{1,2\}, j \in \![1,N\!]}
-        \mathbf{1}_{[j \ne i]},
+        \sum\limits_{l \in \{1,2\}, j \in [1,N]}
+        \mathbf{1}_{[j \ne i]}
         \exp\!\big(\operatorname{sim}(z_i^{(k)}, z_j^{(l)})/\tau\big)
 
     See the class :class:`~nidl.losses.dcl.DCLWLoss` for an implementation with
@@ -61,10 +61,11 @@ class DCLLoss(nn.Module):
     Parameters
     ----------
     temperature: float, default=0.1
-        Scale logits by the inverse of the temperature.
+        Temperature :math:`\tau > 0` scaling the similarities (logits are
+        divided by it).
     pos_weight_fn: Optional[callable], default=None
         Weighting function of the positive pairs (:math:`w` in [1]_).
-        It is a callable that takes two tensors :math:`z^(1)` and :math:`z^(2)`
+        It is a callable that takes two tensors :math:`z^{(1)}` and :math:`z^{(2)}`
         as inputs and returns the weights :math:`w(z1,z2)` as a tensor.
         If None, a DCL loss without weighting is returned.
 
@@ -100,7 +101,7 @@ class DCLLoss(nn.Module):
         self.pos_weight_fn = pos_weight_fn
 
     def forward(self, z1: Tensor, z2: Tensor):
-        """Forward implementation.
+        """Compute the DCL loss between two views.
 
         Parameters
         ----------
@@ -164,14 +165,14 @@ class DCLWLoss(DCLLoss):
         \frac{
         \exp\!\big(\operatorname{sim}(z_i^{(1)}, z_i^{(2)})/\sigma\big)
         }{
-        \frac{1}{N}\sum\limits_{j=1}{N}
-        \exp\!\big(\operatorname{sim}(z_i^{(1)}, z_i^{(2)})/\sigma\big)
+        \frac{1}{N}\sum\limits_{j=1}^{N}
+        \exp\!\big(\operatorname{sim}(z_j^{(1)}, z_j^{(2)})/\sigma\big)
         }
 
     where :math:`N` is the batch size,
-    :math:`\operatorname{sim}(z_i^(1), z_i^(2))`
+    :math:`\operatorname{sim}(z_i^{(1)}, z_i^{(2)})`
     denotes the cosine similarity between the normalized embeddings
-    :math:`z_i^(1)` and :math:`z_i^(2)`, and :math:`\sigma > 0` is a
+    :math:`z_i^{(1)}` and :math:`z_i^{(2)}`, and :math:`\sigma > 0` is a
     temperature parameter controlling the concentration of the distribution.
 
     Parameters
@@ -179,7 +180,8 @@ class DCLWLoss(DCLLoss):
     sigma: float, default=0.5
         Temperature parameter of the von Mises-Fisher weighting function.
     temperature: float, default=0.1
-        Scale logits by the inverse of the temperature.
+        Temperature :math:`\tau > 0` of the DCL loss (logits are divided by
+        it).
 
     References
     ----------
